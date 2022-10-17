@@ -1,3 +1,5 @@
+import time
+
 class Player:
     def __init__(self, x, y, board):
         self.board = board
@@ -42,6 +44,10 @@ class Player:
             self.x = orig_x
             self.y = orig_y
         elif self.board.grid[self.x][self.y] == 3:
+            self.board.grid[orig_x][orig_y] = 0
+            self.board.grid[self.x][self.y] = 2
+            self.board.draw()
+            time.sleep(0.5)
             return 1
         else:
             for idx, ball in enumerate(self.board.balls):
