@@ -88,12 +88,12 @@ class Engine:
                 self.board.player[1] = orig_y
         reached_goal = self.intersectionPG(self.board.player, self.board.goal)
         if reached_goal == self.board.player[2]*self.board.player[3]:
-            self.board.draw()
-            time.sleep(0.5)
+            # self.board.draw()
+            # time.sleep(0.5)
             return 1
         for idx, ball in enumerate(self.board.balls):
             if self.intersectionPB(self.board.player, ball) > 0:
-                self.board.draw()
-                time.sleep(0.5)
+                # self.board.draw()
+                # time.sleep(0.5)
                 return -1
         return 0

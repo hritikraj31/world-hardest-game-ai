@@ -17,12 +17,9 @@ class Board:
         self.player = [0, 0, 0, 0]
         self.goal = [0, 0, 0, 0]
         self.read_map()
-        self.screen = None
-        self.surf = None
-        self.clock = None
         self.engine = Engine(self)
 
-    def draw(self):
+    def draw(self, surf):
         class Colors(Enum):
             RED = (1, (255, 0, 0))
             GREEN = (2, (50, 255, 50))
@@ -39,28 +36,17 @@ class Board:
 
             def rgb(self) -> Tuple:
                 return self.value[1]
-        if self.screen is None:
-            pygame.init()
-            pygame.display.init()
-            self.screen = pygame.display.set_mode((self.width, self.height))
-        if self.clock is None:
-            self.clock = pygame.time.Clock()
-        self.surf = pygame.Surface((self.width, self.height))
-        self.surf.fill((255, 255, 255))
+
         for i in range(self.width // self.cell_size):
             for j in range(self.height // self.cell_size):
                 if i % 2 == j % 2:
-                    pygame.gfxdraw.box(self.surf, (i*self.cell_size, j*self.cell_size, self.cell_size, self.cell_size), Colors.GRAY.rgb())
+                    pygame.gfxdraw.box(surf, (i*self.cell_size, j*self.cell_size, self.cell_size, self.cell_size), Colors.GRAY.rgb())
         for wall in self.walls:
-            pygame.gfxdraw.box(self.surf, (wall[0], wall[1], wall[2], wall[3]), Colors.BLACK.rgb())
-        pygame.gfxdraw.box(self.surf, (self.goal[0], self.goal[1], self.goal[2], self.goal[3]), Colors.GREEN.rgb())
+            pygame.gfxdraw.box(surf, (wall[0], wall[1], wall[2], wall[3]), Colors.BLACK.rgb())
+        pygame.gfxdraw.box(surf, (self.goal[0], self.goal[1], self.goal[2], self.goal[3]), Colors.GREEN.rgb())
         for ball in self.balls:
-            pygame.gfxdraw.filled_circle(self.surf, ball[0], ball[1], ball[2], Colors.RED.rgb())
-        pygame.gfxdraw.box(self.surf, (self.player[0], self.player[1], self.player[2], self.player[3]), Colors.BLUE.rgb())
-        self.screen.blit(self.surf, (0, 0))
-        pygame.event.pump()
-        self.clock.tick(50)
-        pygame.display.flip()
+            pygame.gfxdraw.filled_circle(surf, ball[0], ball[1], ball[2], Colors.RED.rgb())
+        pygame.gfxdraw.box(surf, (self.player[0], self.player[1], self.player[2], self.player[3]), Colors.BLUE.rgb())
 
     def read_map(self):
         filename = 'envs/GameMap'
@@ -82,3 +68,6 @@ class Board:
     def close(self):
         pygame.display.quit()
         pygame.quit()
+
+    def get_dimension(self):
+        return self.width, self.height
