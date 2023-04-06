@@ -1,6 +1,7 @@
 import time
 
 import gym
+import numpy as np
 from gym import spaces
 
 import pygame
@@ -16,25 +17,31 @@ class GameEnv(gym.Env):
         self.screen = None
         self.clock = None
         self.engine = Engine(self.board)
-        self.action_space = spaces.Discrete(5)
-        # self.observation_space = spaces.Box()
+
+        self.observation_dim = self.board.get_state().shape
         self.render_mode = render_mode
 
     def step(self, action):
-        result = self.engine.move(action)
-        if result == -1 or result == 1:
+        terminated, reward = self.engine.move(action)
+        self.board.state[0] = self.board.player[0]
+        self.board.state[1] = self.board.player[1]
+        # for idx, ball in enumerate(self.board.balls):
+        #     self.board.state[3 * idx + 2] = ball[0]
+        #     self.board.state[3 * idx + 3] = ball[1]
+        #     self.board.state[3 * idx + 4] = ball[3]
+        if terminated:
             if self.render_mode == 'human':
                 self.render(self.render_mode)
                 time.sleep(0.5)
-            return 1
+            return self.board.get_state(), reward, terminated
         if self.render_mode == 'human':
             self.render(self.render_mode)
-        return 0
+        return self.board.get_state(), reward, terminated
 
     def reset(self):
         self.board = Board()
         self.engine = Engine(self.board)
-        self.render()
+        return self.board.get_state()
 
     def render(self, render_mode):
         if self.screen is None and render_mode == 'human':

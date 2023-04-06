@@ -26,7 +26,7 @@ class VideoUtility:
         self.image_files.append(image_filename)
 
     def compile_images(self):
-        clip = moviepy.video.io.ImageSequenceClip.ImageSequenceClip(self.image_files, fps=15)
+        clip = moviepy.video.io.ImageSequenceClip.ImageSequenceClip(self.image_files, fps=30)
         clip.write_videofile(os.path.join(self.output_dir, self.current_filename + '.mp4'))
         shutil.rmtree(self.current_sequence_dir)
         self.current_sequence_dir = None
