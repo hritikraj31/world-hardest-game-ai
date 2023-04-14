@@ -77,7 +77,7 @@ class Engine:
         elif action == 4:
             self.board.player[1] += self.board.playerSpeed
         else:
-            reward -= 0.05
+            reward -= 0.5
         for ball in self.board.balls:
             if ball[3] == 1:
                 ball[0] += self.board.ballSpeed
@@ -117,7 +117,7 @@ class Engine:
             if overlap > 0:
                 self.board.player[0] = orig_x
                 self.board.player[1] = orig_y
-                reward -= 0.5
+                reward -= 50
         reached_goal = self.intersectionPG(self.board.player, self.board.goal)
         if reached_goal == self.board.player[2]*self.board.player[3]:
             return True, 5
@@ -131,7 +131,7 @@ class Engine:
             if (not original_crossed) and new_crossed:
                 reward += checkpoint[3]
             elif original_crossed and (not new_crossed):
-                reward -= 2*checkpoint[3]
+                reward -= checkpoint[3]
             if new_crossed:
                 self.checkpoint = idx + 1
         reward += self.reward_calculation(orig_x, orig_y)

@@ -4,6 +4,8 @@ from pygame import gfxdraw
 from enum import Enum
 from typing import Tuple
 import numpy as np
+from envs.Utils import line_ray_intersection
+import math
 
 
 class Board:
@@ -21,6 +23,10 @@ class Board:
         self.state = None
         self.read_map()
         self.engine = Engine(self)
+
+        a = math.cos(math.pi/4)
+        self.ray_directions = [(1, 0), (a, -a), (0, -1), (-a, -a), (-1, 0), (-a, a), (0, 1), (a, a)]
+        self.ray_hit_points = []
         # self.dispreward = 0
 
     def draw(self, surf):
@@ -31,6 +37,8 @@ class Board:
             GRAY = (4, (191, 191, 191))
             BLACK = (5, (0, 0, 0))
             WHITE = (6, (255, 255, 255))
+            YELLOW = (7, (246, 250, 40))
+            VIOLET = (8, (166, 40, 250))
 
             def __str__(self) -> str:
                 return self.name.lower()
@@ -51,6 +59,36 @@ class Board:
         for ball in self.balls:
             pygame.gfxdraw.filled_circle(surf, ball[0], ball[1], ball[2], Colors.RED.rgb())
         pygame.gfxdraw.box(surf, (self.player[0], self.player[1], self.player[2], self.player[3]), Colors.BLUE.rgb())
+
+        checkpoint_idx = self.engine.checkpoint
+        point1 = [self.checkpoints[checkpoint_idx][0], self.checkpoints[checkpoint_idx][1]]
+        point2 = [self.checkpoints[checkpoint_idx][0], self.checkpoints[checkpoint_idx][1]]
+        if self.checkpoints[checkpoint_idx][2] in [0, 2, 4, 6]:
+            point1[1] -= self.checkpoints[checkpoint_idx][4]
+            point2[1] += self.checkpoints[checkpoint_idx][4]
+        else:
+            point1[0] -= self.checkpoints[checkpoint_idx][4]
+            point2[0] += self.checkpoints[checkpoint_idx][4]
+        pygame.gfxdraw.line(surf, point1[0], point1[1], point2[0], point2[1], Colors.YELLOW.rgb())
+
+        checkpoint_idx = self.engine.checkpoint - 1
+        if checkpoint_idx >=0:
+            point1 = [self.checkpoints[checkpoint_idx][0], self.checkpoints[checkpoint_idx][1]]
+            point2 = [self.checkpoints[checkpoint_idx][0], self.checkpoints[checkpoint_idx][1]]
+            if self.checkpoints[checkpoint_idx][2] in [0, 2, 4, 6]:
+                point1[1] -= self.checkpoints[checkpoint_idx][4]
+                point2[1] += self.checkpoints[checkpoint_idx][4]
+            else:
+                point1[0] -= self.checkpoints[checkpoint_idx][4]
+                point2[0] += self.checkpoints[checkpoint_idx][4]
+            pygame.gfxdraw.line(surf, point1[0], point1[1], point2[0], point2[1], Colors.RED.rgb())
+        # self.compute_state()
+
+        for x, y, t in self.ray_hit_points:
+            if t == 0 or t == -2:
+                pygame.gfxdraw.line(surf, self.player[0] + self.player[2] // 2, self.player[1] + self.player[3] // 2, int(x), int(y), Colors.GREEN.rgb() if t==0 else Colors.RED.rgb())
+            else:
+                pygame.gfxdraw.line(surf, self.player[0]+ self.player[2]//2, self.player[1] + self.player[3]//2, int(x), int(y), Colors.VIOLET.rgb() if t==1 else Colors.RED.rgb())
         # font = pygame.font.SysFont('Times New Roman', 20)
         # self.dispreward += reward
         # img = font.render(str(self.dispreward), True, Colors.BLACK.rgb())
@@ -77,7 +115,7 @@ class Board:
                 # self.state.append(self.balls[-1][1])
                 # self.state.append(self.balls[-1][3])
             elif data[0] == 'C':
-                self.checkpoints.append((int(data[1]), int(data[2]), int(data[3]), int(data[4])))
+                self.checkpoints.append((int(data[1]), int(data[2]), int(data[3]), int(data[4]), int(data[5])))
                 # consists of coordinate, type of checkpoint(0: line right, 1: line up
                 # ,2: line left, 3: line down, 4: point right, 5: point up, 6: point left, 7: point down), reward
             else:
@@ -92,5 +130,97 @@ class Board:
     def get_dimension(self):
         return self.width, self.height
 
+    def compute_state(self):
+        self.state = []
+        self.ray_hit_points = []
+        ray_origin = [self.player[0] + self.player[2]/2, self.player[1] + self.player[3]/2]
+        for ray_direction in self.ray_directions:
+            best_t = 1000000000
+            best_point = (ray_origin, 1)
+            for wall in self.walls:
+                point1 = (wall[0], wall[1])
+                point2 = (wall[0], wall[1] + wall[3])
+                t, point = line_ray_intersection(ray_origin, ray_direction, point1, point2)
+                if t != -1 and t < best_t:
+                    best_t = t
+                    best_point = (point, 1)
+                point2 = (wall[0] + wall[2], wall[1])
+                t, point = line_ray_intersection(ray_origin, ray_direction, point1, point2)
+                if t != -1 and t < best_t:
+                    best_t = t
+                    best_point = (point, 1)
+                point1 = (wall[0] + wall[2], wall[1] + wall[3])
+                point2 = (wall[0] + wall[2], wall[1])
+                t, point = line_ray_intersection(ray_origin, ray_direction, point1, point2)
+                if t != -1 and t < best_t:
+                    best_t = t
+                    best_point = (point, 1)
+                point2 = (wall[0], wall[1] + wall[3])
+                t, point = line_ray_intersection(ray_origin, ray_direction, point1, point2)
+                if t != -1 and t < best_t:
+                    best_t = t
+                    best_point = (point, 1)
+            for ball in self.balls:
+                point1 = (ball[0]-ball[2], ball[1]+ball[2])
+                point2 = (ball[0]-ball[2], ball[1]-ball[2])
+                t, point = line_ray_intersection(ray_origin, ray_direction, point1, point2)
+                if t != -1 and t < best_t:
+                    best_t = t
+                    best_point = (point, -1)
+                point1 = (ball[0] + ball[2], ball[1] - ball[2])
+                t, point = line_ray_intersection(ray_origin, ray_direction, point1, point2)
+                if t != -1 and t < best_t:
+                    best_t = t
+                    best_point = (point, -1)
+                point1 = (ball[0] - ball[2], ball[1] + ball[2])
+                point2 = (ball[0] + ball[2], ball[1] + ball[2])
+                t, point = line_ray_intersection(ray_origin, ray_direction, point1, point2)
+                if t != -1 and t < best_t:
+                    best_t = t
+                    best_point = (point, -1)
+                point1 = (ball[0] + ball[2], ball[1] - ball[2])
+                t, point = line_ray_intersection(ray_origin, ray_direction, point1, point2)
+                if t != -1 and t < best_t:
+                    best_t = t
+                    best_point = (point, -1)
+            checkpoint_idx = self.engine.checkpoint
+            point1 = [self.checkpoints[checkpoint_idx][0], self.checkpoints[checkpoint_idx][1]]
+            point2 = [self.checkpoints[checkpoint_idx][0], self.checkpoints[checkpoint_idx][1]]
+            if self.checkpoints[checkpoint_idx][2] in [0, 2, 4, 6]:
+                point1[1] -= self.checkpoints[checkpoint_idx][4]
+                point2[1] += self.checkpoints[checkpoint_idx][4]
+            else:
+                point1[0] -= self.checkpoints[checkpoint_idx][4]
+                point2[0] += self.checkpoints[checkpoint_idx][4]
+            t, point = line_ray_intersection(ray_origin, ray_direction, point1, point2)
+            if t != -1 and t < best_t:
+                best_t = t
+                best_point = (point, 0)
+            checkpoint_idx = self.engine.checkpoint - 1
+            if checkpoint_idx >= 0:
+                point1 = [self.checkpoints[checkpoint_idx][0], self.checkpoints[checkpoint_idx][1]]
+                point2 = [self.checkpoints[checkpoint_idx][0], self.checkpoints[checkpoint_idx][1]]
+                if self.checkpoints[checkpoint_idx][2] in [0, 2, 4, 6]:
+                    point1[1] -= self.checkpoints[checkpoint_idx][4]
+                    point2[1] += self.checkpoints[checkpoint_idx][4]
+                else:
+                    point1[0] -= self.checkpoints[checkpoint_idx][4]
+                    point2[0] += self.checkpoints[checkpoint_idx][4]
+                t, point = line_ray_intersection(ray_origin, ray_direction, point1, point2)
+                if t != -1 and t < best_t:
+                    best_t = t
+                    best_point = (point, -2)
+            self.ray_hit_points.append([best_point[0][0], best_point[0][1], best_point[1]])
+            best_t /= 400.0
+            if best_point[1] == 1:
+                self.state.append([best_t, 0, 0, 0])
+            elif best_point[1] == -1:
+                self.state.append([0, best_t, 0, 0])
+            elif best_point[1] == 0:
+                self.state.append([0, 0, best_t, 0])
+            else:
+                self.state.append([0, 0, 0, best_t])
+
     def get_state(self):
-        return np.array(self.state)
+        self.compute_state()
+        return np.array(self.state).flatten()

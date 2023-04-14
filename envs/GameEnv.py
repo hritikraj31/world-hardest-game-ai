@@ -9,6 +9,7 @@ import pygame
 from envs.Board import Board
 from envs.Engine import Engine
 
+
 class GameEnv(gym.Env):
 
     def __init__(self, render_mode):
@@ -16,15 +17,14 @@ class GameEnv(gym.Env):
         self.surf = None
         self.screen = None
         self.clock = None
-        self.engine = Engine(self.board)
 
         self.observation_dim = self.board.get_state().shape
         self.render_mode = render_mode
 
     def step(self, action):
-        terminated, reward = self.engine.move(action)
-        self.board.state[0] = self.board.player[0]
-        self.board.state[1] = self.board.player[1]
+        terminated, reward = self.board.engine.move(action)
+        # self.board.state[0] = self.board.player[0]
+        # self.board.state[1] = self.board.player[1]
         # for idx, ball in enumerate(self.board.balls):
         #     self.board.state[3 * idx + 2] = ball[0]
         #     self.board.state[3 * idx + 3] = ball[1]
@@ -40,7 +40,6 @@ class GameEnv(gym.Env):
 
     def reset(self):
         self.board = Board()
-        self.engine = Engine(self.board)
         return self.board.get_state()
 
     def render(self, render_mode):
