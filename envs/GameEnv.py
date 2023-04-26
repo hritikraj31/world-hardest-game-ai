@@ -32,6 +32,8 @@ class GameEnv(gym.Env):
         self.max_steps = 50
         self.sorted_list = []
 
+        self.best_fitness = 0
+
     def step(self):
         self.engine.move()
         for player in self.players:
@@ -44,6 +46,8 @@ class GameEnv(gym.Env):
             #     print(player.pos)
             #     print(orig_x, orig_y)
             #     assert False
+            if goal_reached:
+                player.goal_reached = True
             if (goal_reached or ball_hit) and not player.dead:
                 self.count_alive -= 1
                 player.dead = True
@@ -88,7 +92,12 @@ class GameEnv(gym.Env):
 
     def natural_selection(self):
         self.generation += 1
-        if self.generation % 5 == 0:
+        m_steps = 0
+        for player in self.players:
+            if abs(self.best_fitness - player.fitness) > 100.0:
+                continue
+            m_steps = max(m_steps, player.genes.index+1)
+        if self.generation % 5 == 0 and (not (abs(m_steps - self.max_steps - 5) > 50)):
             self.max_steps += 10
         if self.max_steps == self.GL:
             self.GL += 50
@@ -99,13 +108,18 @@ class GameEnv(gym.Env):
         for player in self.players:
             self.sorted_list.append([player.fitness, player])
         self.sorted_list = sorted(self.sorted_list, key=cmp_to_key(lambda item1, item2: item2[0] - item1[0]))
+        # print('Worst player fitness {}'.format(self.sorted_list[-1][0]))
         best_player = self.find_best_player()
+        self.best_fitness = best_player.fitness
         print(self.sorted_list[0][0], best_player.fitness)
         new_population[len(self.players) - 1] = best_player.clone([self.board.pos_size[0][0], self.board.pos_size[0][1]], [self.board.pos_size[1][0], self.board.pos_size[1][1]], self.GL)
         new_population[len(self.players) - 1].is_best = True
+        mn = best_player.fitness
         for i in range(0, len(self.players)-1):
             parent = self.select_parent()
+            mn = min(mn, parent.fitness)
             new_population[i] = parent.clone([self.board.pos_size[0][0], self.board.pos_size[0][1]], [self.board.pos_size[1][0], self.board.pos_size[1][1]], self.GL)
+        assert best_player.fitness - mn < 100.1
         self.players = new_population
 
     def select_parent(self):
@@ -113,12 +127,16 @@ class GameEnv(gym.Env):
         total_fitness = 0
         # for i in range(0, 100):
         #     self.sorted_list[i][0] *= (100-i)//10
+        mx = self.sorted_list[0][0]
         for i in range(0, 100):
+            if mx - self.sorted_list[i][0] > 100.0:
+                break
             total_fitness += self.sorted_list[i][0]
         pointer = random.uniform(0, total_fitness)
         for fitness, player in self.sorted_list:
             current_sum += fitness
             if current_sum > pointer:
+                assert mx - player.fitness < 100.1
                 return player
 
     def calculate_fitness(self):

@@ -128,6 +128,8 @@ class Engine:
     def calculate_fitness(self, player):
         chk_index = 0
         player.fitness = 0
+        if player.goal_reached:
+            player.fitness += self.board.goal[4]
         for idx, checkpoint in enumerate(self.board.checkpoints):
             crossed = self.checkpoint_crossed(checkpoint, player.pos[0]+player.size[0]/2, player.pos[1]+player.size[1]/2)
             if crossed:

@@ -64,7 +64,7 @@ class Board:
             elif data[0] == 'W':
                 self.walls.append([int(data[1]), int(data[2]), int(data[3]), int(data[4])])
             elif data[0] == 'G':
-                self.goal = [int(data[1]), int(data[2]), int(data[3]), int(data[4])]
+                self.goal = [int(data[1]), int(data[2]), int(data[3]), int(data[4]), int(data[5])]
             elif data[0] == 'B':
                 self.balls.append([int(data[1]), int(data[2]), int(data[3]), int(data[4])])
             elif data[0] == 'C':

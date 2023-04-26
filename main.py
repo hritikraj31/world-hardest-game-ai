@@ -96,22 +96,23 @@ def test_mode():
     stop = False
     count = 0
     video_utility.initialize('gen0')
+    mod = 5
     while not stop:
         env.step()
         count += 1
-        if env.count_alive > 0 and env.generation % 5 == 0:
+        if env.count_alive > 0 and env.generation % mod == 0:
             env.render('human')
-            if env.generation % 5 == 0:
+            if env.generation % mod == 0:
                 video_utility.save_image('img_{}.jpeg'.format(count), env.render('surface'))
         if env.count_alive < 1:
             count = 0
-            if env.generation % 5 == 0:
+            if env.generation % mod == 0:
                 video_utility.compile_images()
             env.calculate_fitness()
             env.natural_selection()
             env.mutate()
-            if env.generation % 5 == 1:
-                video_utility.initialize('gen{}'.format(env.generation+4))
+            if env.generation % mod == 1:
+                video_utility.initialize('gen{}'.format(env.generation+mod-1))
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 stop = True

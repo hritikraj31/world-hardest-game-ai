@@ -14,6 +14,7 @@ class Player:
         self.win = False
         self.fitness = 0
         self.is_best = False
+        self.goal_reached = False
 
     def move(self):
         if self.dead:
