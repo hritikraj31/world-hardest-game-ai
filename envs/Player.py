@@ -36,7 +36,6 @@ class Player:
 
     def draw(self, surf):
         if not self.dead:
-            # surf.blit(rect_surf, (self.pos[0], self.pos[1]))
             pygame.gfxdraw.box(surf, (self.pos[0], self.pos[1], self.size[0], self.size[1]), (50, 255, 50) if self.is_best else (0, 0, 255))
             border = 3
             border_color = (50, 50, 50)

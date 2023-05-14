@@ -1,9 +1,6 @@
-import time
 
 import gym
 import random
-import numpy as np
-from gym import spaces
 
 import pygame
 
@@ -41,11 +38,6 @@ class GameEnv(gym.Env):
             player.move()
             goal_reached, ball_hit, wall_hit, [new_x, new_y] = self.engine.check_collisions(orig_x, orig_y, player.pos[0], player.pos[1], player.size[0], player.size[1])
             player.pos = [new_x, new_y]
-            # g, b, w, p = self.engine.check_collisions(orig_x, orig_y, new_pos[0], new_pos[1], player.size[0], player.size[1])
-            # if w:
-            #     print(player.pos)
-            #     print(orig_x, orig_y)
-            #     assert False
             if goal_reached:
                 player.goal_reached = True
             if (goal_reached or ball_hit) and not player.dead:

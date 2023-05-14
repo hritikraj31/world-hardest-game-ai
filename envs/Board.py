@@ -3,7 +3,6 @@ import pygame
 from pygame import gfxdraw
 from enum import Enum
 from typing import Tuple
-import numpy as np
 
 
 class Board:
@@ -48,10 +47,6 @@ class Board:
         pygame.gfxdraw.box(surf, (self.goal[0], self.goal[1], self.goal[2], self.goal[3]), Colors.GREEN.rgb())
         for ball in self.balls:
             pygame.gfxdraw.filled_circle(surf, ball[0], ball[1], ball[2], Colors.RED.rgb())
-        # font = pygame.font.SysFont('Times New Roman', 20)
-        # self.dispreward += reward
-        # img = font.render(str(self.dispreward), True, Colors.BLACK.rgb())
-        # surf.blit(img, (20, 20))
 
     def read_map(self):
         filename = 'envs/GameMap'

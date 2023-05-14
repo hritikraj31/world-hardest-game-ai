@@ -1,4 +1,3 @@
-import time
 
 
 class Engine:
@@ -49,15 +48,14 @@ class Engine:
 
     def reward_calculation(self, x, y, prev_x, prev_y, chk_index):
         checkpoint = self.board.checkpoints[chk_index]
-        # distance_sq = (x-checkpoint[0])* (x-checkpoint[0]) + (y-checkpoint[1])* (y-checkpoint[1])
         if checkpoint[2] == 0 or checkpoint[2] == 2:
-            distance_sq = abs(x-checkpoint[0])
+            distance = abs(x-checkpoint[0])
         elif checkpoint[2] == 1 or checkpoint[2] == 3:
-            distance_sq = abs(y-checkpoint[1])
+            distance = abs(y-checkpoint[1])
         else:
-            distance_sq = abs(x-checkpoint[0]) + abs(y-checkpoint[1])
+            distance = abs(x-checkpoint[0]) + abs(y-checkpoint[1])
         total_distance = abs(prev_x-checkpoint[0]) + abs(prev_y-checkpoint[1])
-        reward = checkpoint[3] * (total_distance-distance_sq) / total_distance
+        reward = checkpoint[3] * (total_distance-distance) / total_distance
         return reward
 
     def move(self):
@@ -95,19 +93,6 @@ class Engine:
                         ball[1] -= 2*overlap
                         ball[3] = 2
                         break
-
-        # self.checkpoint = 0
-        # for idx, checkpoint in enumerate(self.board.checkpoints):
-        #     original_crossed = self.checkpoint_crossed(checkpoint, orig_x + self.board.player[2]/2, orig_y + self.board.player[3]/2)
-        #     new_crossed = self.checkpoint_crossed(checkpoint, self.board.player[0] + self.board.player[2]/2, self.board.player[1] + self.board.player[3]/2)
-        #     if (not original_crossed) and new_crossed:
-        #         reward += checkpoint[3]
-        #     elif original_crossed and (not new_crossed):
-        #         reward -= 2*checkpoint[3]
-        #     if new_crossed:
-        #         self.checkpoint = idx + 1
-        # reward += self.reward_calculation(orig_x, orig_y)
-
         return False, reward
 
     def check_collisions(self, orig_x, orig_y, new_x, new_y, size_x, size_y):
@@ -115,14 +100,11 @@ class Engine:
             overlap = self.intersectionPW([new_x, new_y, size_x, size_y], wall)
             if overlap > 0:
                 return False, False, True, [orig_x, orig_y]
-
         if self.intersectionPG([new_x, new_y, size_x, size_y], self.board.goal) == size_x * size_y:
             return True, False, False, [new_x, new_y]
-
         for idx, ball in enumerate(self.board.balls):
             if self.intersectionPB([min(new_x, orig_x), min(new_y, orig_y), size_x + abs(new_x-orig_x), size_y + abs(new_y-orig_y)], ball) > 0:
                 return False, True, False, [orig_x, orig_y]
-
         return False, False, False, [new_x, new_y]
 
     def calculate_fitness(self, player):
