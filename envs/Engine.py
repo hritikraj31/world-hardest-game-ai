@@ -1,4 +1,3 @@
-import time
 
 
 class Engine:
@@ -47,37 +46,20 @@ class Engine:
         else:
             return y >= checkpoint[1]
 
-    def reward_calculation(self, orig_x, orig_y):
-        checkpoint = self.board.checkpoints[self.checkpoint]
-        distance1 = 0
-        distance2 = 0
+    def reward_calculation(self, x, y, prev_x, prev_y, chk_index):
+        checkpoint = self.board.checkpoints[chk_index]
         if checkpoint[2] == 0 or checkpoint[2] == 2:
-            distance1 = abs(orig_x - checkpoint[0])
-            distance2 = abs(self.board.player[0] - checkpoint[0])
+            distance = abs(x-checkpoint[0])
         elif checkpoint[2] == 1 or checkpoint[2] == 3:
-            distance1 = abs(orig_y - checkpoint[1])
-            distance2 = abs(self.board.player[1] - checkpoint[1])
+            distance = abs(y-checkpoint[1])
         else:
-            distance1 = abs(orig_x - checkpoint[0]) + abs(orig_y - checkpoint[1])
-            distance2 = abs(self.board.player[0] - checkpoint[0]) + abs(self.board.player[1] - checkpoint[1])
-        reward = (distance1 - distance2)/((1 + distance1) * (1 + distance2))
-        if reward < 0:
-            reward -= 0.1
+            distance = abs(x-checkpoint[0]) + abs(y-checkpoint[1])
+        total_distance = abs(prev_x-checkpoint[0]) + abs(prev_y-checkpoint[1])
+        reward = checkpoint[3] * (total_distance-distance) / total_distance
         return reward
 
-    def move(self, action):
+    def move(self):
         reward = 0
-        [orig_x, orig_y] = [self.board.player[0], self.board.player[1]]
-        if action == 1:
-            self.board.player[0] += self.board.playerSpeed
-        elif action == 2:
-            self.board.player[1] -= self.board.playerSpeed
-        elif action == 3:
-            self.board.player[0] -= self.board.playerSpeed
-        elif action == 4:
-            self.board.player[1] += self.board.playerSpeed
-        else:
-            reward -= 0.05
         for ball in self.board.balls:
             if ball[3] == 1:
                 ball[0] += self.board.ballSpeed
@@ -111,29 +93,47 @@ class Engine:
                         ball[1] -= 2*overlap
                         ball[3] = 2
                         break
-
-        for wall in self.board.walls:
-            overlap = self.intersectionPW(self.board.player, wall)
-            if overlap > 0:
-                self.board.player[0] = orig_x
-                self.board.player[1] = orig_y
-                reward -= 0.5
-        reached_goal = self.intersectionPG(self.board.player, self.board.goal)
-        if reached_goal == self.board.player[2]*self.board.player[3]:
-            return True, 5
-        for idx, ball in enumerate(self.board.balls):
-            if self.intersectionPB(self.board.player, ball) > 0:
-                return True, -2
-        self.checkpoint = 0
-        for idx, checkpoint in enumerate(self.board.checkpoints):
-            original_crossed = self.checkpoint_crossed(checkpoint, orig_x + self.board.player[2]/2, orig_y + self.board.player[3]/2)
-            new_crossed = self.checkpoint_crossed(checkpoint, self.board.player[0] + self.board.player[2]/2, self.board.player[1] + self.board.player[3]/2)
-            if (not original_crossed) and new_crossed:
-                reward += checkpoint[3]
-            elif original_crossed and (not new_crossed):
-                reward -= 2*checkpoint[3]
-            if new_crossed:
-                self.checkpoint = idx + 1
-        reward += self.reward_calculation(orig_x, orig_y)
-
         return False, reward
+
+    def check_collisions(self, orig_x, orig_y, new_x, new_y, size_x, size_y):
+        for wall in self.board.walls:
+            overlap = self.intersectionPW([new_x, new_y, size_x, size_y], wall)
+            if overlap > 0:
+                return False, False, True, [orig_x, orig_y]
+        if self.intersectionPG([new_x, new_y, size_x, size_y], self.board.goal) == size_x * size_y:
+            return True, False, False, [new_x, new_y]
+        for idx, ball in enumerate(self.board.balls):
+            if self.intersectionPB([min(new_x, orig_x), min(new_y, orig_y), size_x + abs(new_x-orig_x), size_y + abs(new_y-orig_y)], ball) > 0:
+                return False, True, False, [orig_x, orig_y]
+        return False, False, False, [new_x, new_y]
+
+    def calculate_fitness(self, player):
+        chk_index = 0
+        player.fitness = 0
+        if player.goal_reached:
+            player.fitness += self.board.goal[4]
+        for idx, checkpoint in enumerate(self.board.checkpoints):
+            crossed = self.checkpoint_crossed(checkpoint, player.pos[0]+player.size[0]/2, player.pos[1]+player.size[1]/2)
+            if crossed:
+                chk_index = idx+1
+                player.fitness += checkpoint[3]
+        if chk_index == 0:
+            prev_x = self.board.pos_size[0][0]
+            prev_y = self.board.pos_size[0][1]
+        else:
+            prev_x = self.board.checkpoints[chk_index - 1][0]
+            prev_y = self.board.checkpoints[chk_index - 1][1]
+        while chk_index < len(self.board.checkpoints) and self.board.checkpoints[chk_index][2] < 4:
+            chk_index += 1
+        if chk_index < len(self.board.checkpoints):
+            player.fitness += self.reward_calculation(player.pos[0], player.pos[1], prev_x, prev_y, chk_index)
+
+    def get_checkpoint(self, player):
+        chk_index = 0
+        for idx, checkpoint in enumerate(self.board.checkpoints):
+            crossed = self.checkpoint_crossed(checkpoint, player.pos[0] + player.size[0],
+                                              player.pos[1] + player.size[1])
+            if crossed:
+                chk_index = idx+1
+        return chk_index
+

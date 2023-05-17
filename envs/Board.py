@@ -3,7 +3,6 @@ import pygame
 from pygame import gfxdraw
 from enum import Enum
 from typing import Tuple
-import numpy as np
 
 
 class Board:
@@ -15,13 +14,11 @@ class Board:
         self.playerSpeed = 3
         self.balls = []
         self.walls = []
-        self.player = [0, 0, 0, 0]
+        self.pos_size = [0, 0, 0, 0]
         self.goal = [0, 0, 0, 0]
         self.checkpoints = []  # should be given in the order in which to be visited
-        self.state = None
         self.read_map()
         self.engine = Engine(self)
-        # self.dispreward = 0
 
     def draw(self, surf):
         class Colors(Enum):
@@ -50,32 +47,21 @@ class Board:
         pygame.gfxdraw.box(surf, (self.goal[0], self.goal[1], self.goal[2], self.goal[3]), Colors.GREEN.rgb())
         for ball in self.balls:
             pygame.gfxdraw.filled_circle(surf, ball[0], ball[1], ball[2], Colors.RED.rgb())
-        pygame.gfxdraw.box(surf, (self.player[0], self.player[1], self.player[2], self.player[3]), Colors.BLUE.rgb())
-        # font = pygame.font.SysFont('Times New Roman', 20)
-        # self.dispreward += reward
-        # img = font.render(str(self.dispreward), True, Colors.BLACK.rgb())
-        # surf.blit(img, (20, 20))
 
     def read_map(self):
         filename = 'envs/GameMap'
         file = open(filename, 'r')
-        self.state = []
         for line in file:
             data = line.split(' ')
             if data[0] == 'P':
-                self.player = [int(data[1]), int(data[2]), int(data[3]), int(data[4])]
-                self.state.append(self.player[0])
-                self.state.append(self.player[1])
+                self.pos_size = [[int(data[1]), int(data[2])], [int(data[3]), int(data[4])]]
                 # take entry for player before balls
             elif data[0] == 'W':
                 self.walls.append([int(data[1]), int(data[2]), int(data[3]), int(data[4])])
             elif data[0] == 'G':
-                self.goal = [int(data[1]), int(data[2]), int(data[3]), int(data[4])]
+                self.goal = [int(data[1]), int(data[2]), int(data[3]), int(data[4]), int(data[5])]
             elif data[0] == 'B':
                 self.balls.append([int(data[1]), int(data[2]), int(data[3]), int(data[4])])
-                # self.state.append(self.balls[-1][0])
-                # self.state.append(self.balls[-1][1])
-                # self.state.append(self.balls[-1][3])
             elif data[0] == 'C':
                 self.checkpoints.append((int(data[1]), int(data[2]), int(data[3]), int(data[4])))
                 # consists of coordinate, type of checkpoint(0: line right, 1: line up
@@ -91,6 +77,3 @@ class Board:
 
     def get_dimension(self):
         return self.width, self.height
-
-    def get_state(self):
-        return np.array(self.state)
